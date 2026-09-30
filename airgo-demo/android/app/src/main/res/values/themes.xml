@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Compose draws the entire UI, so the platform theme only has to stay out of the
+      way: no action bar, and a transparent status bar so edge-to-edge looks right.
+    -->
+    <style name="Theme.AirGoAgent" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

@@ -1,0 +1,23 @@
+# Copy to local.properties and fill in. local.properties is gitignored.
+# (Android Studio also writes sdk.dir here - leave that line alone.)
+
+# From your Solos contact. A key only works for the application id it was issued for.
+SOLOS_API_KEY=solos_live_replace_me
+# The application id that key was issued for. Defaults to com.solos.relay.
+# (The SDK demo's key is registered to com.solosglasses.solosairgosdkdemoapp.)
+SOLOS_APP_ID=com.solos.relay
+
+# https://aistudio.google.com/apikey
+GEMINI_API_KEY=
+
+# Exact id - check with: python agent_gemini.py --list-models
+GEMINI_MODEL=gemini-3.8-flash
+
+# Set false if mixing googleSearch with functionDeclarations is rejected.
+GEMINI_USE_SEARCH=true
+
+# Gemini 3 thinking level: low = ~1.5s/turn (measured), empty = model default (~9s)
+GEMINI_THINKING=low
+
+# Glasses SFTP file-server password (Wi-Fi photo transfer). Factory default: solos
+SOLOS_FILE_PASSWORD=solos

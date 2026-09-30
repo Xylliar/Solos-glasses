@@ -1,0 +1,9 @@
+SolosAirGoSDK-demo-app-v5.9.0/
+SolosAirGoSDK-docs-v5.9.0/
+SolosAirGoSDK-release-v5.9.0/
+# Build/tooling artifacts
+.kotlin/
+*.zip
+
+# Demo session recordings (large personal media)
+airgo-demo/recordings/

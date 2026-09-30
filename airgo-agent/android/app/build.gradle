@@ -1,0 +1,112 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+// Keys live in local.properties, which git ignores. Falling back to project
+// properties means CI can still inject them as -PGEMINI_API_KEY=...
+def secrets = new Properties()
+def secretsFile = rootProject.file("local.properties")
+if (secretsFile.exists()) { secretsFile.withInputStream { secrets.load(it) } }
+def secret = { String name, String fallback ->
+    secrets.getProperty(name) ?: project.findProperty(name) ?: fallback
+}
+
+
+android {
+    namespace 'com.solos.relay'
+    compileSdk 35
+
+    defaultConfig {
+        // Solos API keys are bound to an application id: the SDK sends "<key>.<appId>"
+        // and the server rejects the key for any other id. Set SOLOS_APP_ID to the id your
+        // key was issued for (the demo key only works as the demo's id).
+        applicationId secret("SOLOS_APP_ID", "com.solos.relay")
+        minSdk 29
+        targetSdk 35
+        versionCode 1
+        versionName "0.1"
+        // Only 64-bit ARM (every current phone): FFmpeg ships four ABIs and made the APK 107 MB.
+        ndk { abiFilters 'arm64-v8a' }
+
+        // ---- Keys -------------------------------------------------------------------
+        // Both come from gradle.properties, which is gitignored. Never hardcode them in
+        // source or in the manifest.
+        //
+        // SOLOS_API_KEY  -> AndroidManifest meta-data, read by the Solos SDK
+        // GEMINI_API_KEY -> BuildConfig, used by the on-device agent
+        //
+        // Note the Gemini key ends up inside the APK and is extractable. Fine for a
+        // demo; for anything real, proxy the calls through a server you control.
+        manifestPlaceholders = [
+            SOLOS_API_KEY: secret("SOLOS_API_KEY", "MISSING_API_KEY")
+        ]
+
+        buildConfigField "String", "GEMINI_API_KEY",
+            "\"${secret('GEMINI_API_KEY', '')}\""
+        buildConfigField "String", "GEMINI_MODEL",
+            "\"${secret('GEMINI_MODEL', 'gemini-3.8-flash')}\""
+        buildConfigField "boolean", "GEMINI_USE_SEARCH",
+            "${secret('GEMINI_USE_SEARCH', 'true')}"
+        // Password of the glasses' SFTP file server, used for Wi-Fi photo transfer.
+        // Factory default is "solos"; the Solos app may have changed it.
+        buildConfigField "String", "SOLOS_FILE_PASSWORD",
+            "\"${secret('SOLOS_FILE_PASSWORD', 'solos')}\""
+        // Gemini 3 thinking level. The default thinks for ~9s per turn; "low" measured
+        // ~1.5s with the same tool-calling behaviour. Empty = model default.
+        buildConfigField "String", "GEMINI_THINKING",
+            "\"${secret('GEMINI_THINKING', 'low')}\""
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions { jvmTarget = '17' }
+
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
+
+    packaging {
+        resources { excludes += '/META-INF/{AL2.0,LGPL2.1}' }
+    }
+}
+
+dependencies {
+    // --- Solos SDK ---------------------------------------------------------------
+    // Copy these from the release package into app/libs/ :
+    //   release-v5.9.0-android/SolosAirGoSDK-v5.9.0.aar
+    //   release-v5.9.0-android/opus.aar
+    implementation files('libs/SolosAirGoSDK-v5.9.0.aar')
+    implementation files('libs/opus.aar')
+
+    // FFmpeg (shipped with the Solos SDK): reads the glasses' RTSP video stream and turns
+    // it into JPEG frames for live vision (LiveVision.kt).
+    implementation files('libs/ffmpeg-kit.aar')
+    implementation 'com.arthenica:smart-exception-java:0.2.1'
+
+    // --- Networking ---------------------------------------------------------------
+    implementation 'org.java-websocket:Java-WebSocket:1.5.7'   // relay mode
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'        // Gemini REST
+
+    // --- Android -----------------------------------------------------------------
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation platform('androidx.compose:compose-bom:2024.10.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+}
